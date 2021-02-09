@@ -14,7 +14,7 @@ http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mu
 		<salesforce:basic-connection username="alejandro.ferrara@globant.com" password="GlobantSap222" securityToken="YwwYlSmaLxgYZsxhfYsn5n4Zg" />
 	</salesforce:sfdc-config>
 	<flow name="pacticecustomernightlybatchFlow" doc:id="67dfb0f5-a8ca-4ac8-95d6-d580f8645278" >
-		<ftp:listener doc:id="b8666ae3-d448-417f-8edc-fc4400241078" config-ref="FTP_Config" watermarkEnabled="true" doc:name="On New or Updated File - desc">
+		<ftp:listener doc:id="b8666ae3-d448-417f-8edc-fc4400241078" config-ref="FTP_Config" watermarkEnabled="true" doc:name="On New or Updated File - descripcion del capo de ale">
 			<scheduling-strategy >
 				<fixed-frequency frequency="1" timeUnit="MINUTES" />
 			</scheduling-strategy>
