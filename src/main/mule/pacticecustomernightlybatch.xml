@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns:batch="http://www.mulesoft.org/schema/mule/batch"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:ftp="http://www.mulesoft.org/schema/mule/ftp" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ftp http://www.mulesoft.org/schema/mule/ftp/current/mule-ftp.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
+	<ftp:config name="FTP_Config" doc:name="FTP Config" doc:id="eaa56c15-3d4c-48b5-bf0f-0d50e0721eec" >
+		<ftp:connection host="ftp.dlptest.com" username="dlpuser" password="rNrKYTX9g7z3RgJRmxWuGHbeu" workingDir="/Alex"/>
+	</ftp:config>
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="824cbcab-cf6e-47e8-9934-b39a48b0ebe7" >
+		<salesforce:basic-connection username="alejandro.ferrara@globant.com" password="GlobantSap222" securityToken="YwwYlSmaLxgYZsxhfYsn5n4Zg" />
+	</salesforce:sfdc-config>
+	<flow name="pacticecustomernightlybatchFlow" doc:id="67dfb0f5-a8ca-4ac8-95d6-d580f8645278" >
+		<ftp:listener doc:id="b8666ae3-d448-417f-8edc-fc4400241078" config-ref="FTP_Config" watermarkEnabled="true">
+			<scheduling-strategy >
+				<fixed-frequency frequency="1" timeUnit="MINUTES" />
+			</scheduling-strategy>
+			<ftp:matcher filenamePattern="new_customers.csv" />
+		</ftp:listener>
+		<ee:transform doc:name="Transform Message" doc:id="2a9956b6-5c81-408a-ae59-5d8dc32328f7" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java // Output mime-type as POJO
+---
+// Convert entire payload variable which currently
+// contains the CSV from the FTP connector
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<batch:job jobName="pacticecustomernightlybatchBatch_Job" doc:id="3b61a568-b980-44d9-977f-b58283721066" blockSize="40">
+			<batch:process-records >
+				<batch:step name="Batch_Step" doc:id="e960e4d3-a3ab-436e-8841-ec38a5d57e13" >
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="74cec686-f095-4a3d-9821-bdd097c10988" size="10">
+						<salesforce:upsert-bulk type="Contact" doc:id="cf6a9096-f69d-4c81-aad8-7f10ab23272d" config-ref="Salesforce_Config" externalIdFieldName="id"/>
+					</batch:aggregator>
+					<ee:transform doc:name="Transform Message" doc:id="0350e14a-d24f-4207-800c-9380c9725d63" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	LastName: payload."Last Name",
+	FirstName: payload."First Name",
+	Salutation: payload."Salutation",
+	MailingStreet: payload."Mailing Street",
+	MailingCity: payload."Mailing City",
+	MailingState: payload."Mailing State/Province",
+	MailingPostalCode: payload."Mailing Zip/Postal Code",
+	MailingCountry: payload."Mailing Country",
+	Phone: payload."Phone",
+	Fax: payload."Fax",
+	MobilePhone: payload."Mobile",
+	Email: payload."Email",
+	Title: payload."Title"
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					<logger level="INFO" doc:name="Logger" doc:id="1c7c2ce5-60b7-4147-89d2-63ebdeff9689" message="#[payload]"/>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete >
+				<logger level="INFO" doc:name="Logger" doc:id="11c6e3d1-1ccb-4bec-bb57-210bab8350bc" message="#[payload]"/>
+			</batch:on-complete>
+		</batch:job>
+	</flow>
+</mule>
